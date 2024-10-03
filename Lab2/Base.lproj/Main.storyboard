@@ -140,6 +140,9 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="Vwz-3J-wk3"/>
+                    <connections>
+                        <outlet property="userView" destination="8bC-Xf-vdC" id="IEA-GA-zU4"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
