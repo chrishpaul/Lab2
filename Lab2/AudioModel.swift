@@ -13,7 +13,12 @@ class AudioModel {
     
     // MARK: Properties
     private var BUFFER_SIZE:Int
+    //private var FREQUENCY_RESOLUTION:Int
+    private var TONE_SEPARATION:Int
+    //private var WINDOW_SIZE:Int
     private var timer:Timer?
+    private var THRESHOLD:Float = 0.0
+
     // these properties are for interfaceing with the API
     // the user can access these arrays at any time and plot them if they like
     var timeData:[Float]
@@ -23,12 +28,24 @@ class AudioModel {
         return Int(self.audioManager!.samplingRate)
     }()
     
+    lazy var frequencyResolution:Float = {
+        return Float(samplingRate) / Float(BUFFER_SIZE)
+    }()
+    
+    lazy var windowSize:Int = {
+        return Int((Float(TONE_SEPARATION) / frequencyResolution).rounded(.up))
+    }()
+    
     // MARK: Public Methods
-    init(buffer_size:Int) {
+    init(buffer_size:Int, tone_separation:Int) {
         BUFFER_SIZE = buffer_size
+        TONE_SEPARATION = tone_separation
+        //WINDOW_SIZE = samplingRate / BUFFER_SIZE
         // anything not lazily instatntiated should be allocated here
         timeData = Array.init(repeating: 0.0, count: BUFFER_SIZE)
         fftData = Array.init(repeating: 0.0, count: BUFFER_SIZE/2)
+        // TODO: Remove
+        printProperties()
     }
     
     // public function for starting processing of microphone data
@@ -77,6 +94,10 @@ class AudioModel {
     
     // You must call this when you want the audio to start being handled by our model
     func play(){
+        // TODO: Remove debug
+        if windowSize == 0 {
+            print("Unknown window size")
+        }
         if let manager = self.audioManager{
             manager.play()
         }
@@ -158,6 +179,8 @@ class AudioModel {
             fftHelper!.performForwardFFT(withData: &timeData,
                                          andCopydBMagnitudeToBuffer: &fftData) // fft result is copied into fftData array
             
+            findPeaks()
+            
             // TODO: Delete
             /*
             var startIndex = 0
@@ -179,6 +202,28 @@ class AudioModel {
             // the user can now use these variables however they like
              */
             
+        }
+    }
+    
+    private func printProperties(){
+        
+        print("Sampling rate: ", samplingRate)
+        print("Frequency resolution: ", frequencyResolution)
+        print("Window size: ", windowSize)
+        print("Buffer size: ", self.BUFFER_SIZE)
+    }
+    
+    private func findPeaks(){
+        let midWindowIndex = windowSize/2
+        //print("Mid Window Index: ", midWindowIndex)
+        var peakArray: Array<Float> = Array(repeating: THRESHOLD, count: fftData.count - windowSize)
+        for i in 0..<peakArray.count{
+            let window = Array(fftData[i..<i+windowSize])
+            let max = window.max()
+            if max! > THRESHOLD && max == window[midWindowIndex]{
+                peakArray[i] = max!
+                print("Peak Found: ", i, " : ", max )
+            }
         }
     }
     

@@ -11,12 +11,13 @@ class ViewController: UIViewController {
     
     @IBOutlet var userView: UIView!
     struct AudioConstants{
-        static let AUDIO_BUFFER_SIZE = 1024*4
+        static let AUDIO_BUFFER_SIZE = 1024*8
+        static let TONE_SEPARATION = 50
     }
     
     // setup audio model with lazy instantiation and nillable
     lazy var audio:AudioModel? = {
-        return AudioModel(buffer_size: AudioConstants.AUDIO_BUFFER_SIZE)
+        return AudioModel(buffer_size: AudioConstants.AUDIO_BUFFER_SIZE, tone_separation: AudioConstants.TONE_SEPARATION)
     }()
 
     lazy var graph:MetalGraph? = {

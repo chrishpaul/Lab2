@@ -42,7 +42,6 @@
 		84E447962CAF0D15005D6C38 /* Novocaine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Novocaine.h; sourceTree = "<group>"; };
 		84E447972CAF0D15005D6C38 /* Novocaine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Novocaine.m; sourceTree = "<group>"; };
 		84E447982CAF0D15005D6C38 /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		84E447A02CAF0DD2005D6C38 /* AudioLabSwift-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "AudioLabSwift-Bridging-Header.h"; path = "../AudioLabSwift/AudioLabSwift/AudioLabSwift-Bridging-Header.h"; sourceTree = "<group>"; };
 		84E447A22CAF0F70005D6C38 /* Lab2-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Lab2-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -60,7 +59,6 @@
 		841138FC2CAA1E830028DB55 = {
 			isa = PBXGroup;
 			children = (
-				84E447A02CAF0DD2005D6C38 /* AudioLabSwift-Bridging-Header.h */,
 				841139072CAA1E830028DB55 /* Lab2 */,
 				841139062CAA1E830028DB55 /* Products */,
 			);
