@@ -2,7 +2,7 @@
 Audio Filtering, the FFT, and Doppler Shifts
 
 Requirements & Tasks:
-- [ ] Landing view with navigation to either Module A or Module B - Use a table view controller with navigation controller
+- [x] Landing view with navigation to either Module A or Module B - Use a table view controller with navigation controller
 - [ ] Proper handling of Novocaine Manager input and output blocks when navigating between controllers
 -  What is meant by proper handling? Nilling the audio manager so that to avoid lingering input and output blocks from previous controller?
 - [ ] Use proper coding techniques and naming conventions for all programming languages.
