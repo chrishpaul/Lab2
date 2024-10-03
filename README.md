@@ -3,7 +3,7 @@ Audio Filtering, the FFT, and Doppler Shifts
 
 Requirements & Tasks:
 - [ ] Landing view with navigation to either Module A or Module B - Use a table view controller with navigation controller
-- [ ] Proper handling of Novocaine Manager input and output blocks whebn navigating between controllers
+- [ ] Proper handling of Novocaine Manager input and output blocks when navigating between controllers
 -  What is meant by proper handling? Nilling the audio manager so that to avoid lingering input and output blocks from previous controller?
 - [ ] Use proper coding techniques and naming conventions for all programming languages.
 
@@ -12,18 +12,14 @@ Module A
 - [ ] Take FFT of the incoming audio stream
 - [ ] Design and document an efficent algorithm to find frequencies of 2 loudest tones to +-3Hz (peak finding for two tones)
 - [ ] Display the frequency of the two loudest tones within +-3Hz accuracy in UILabels
-- What does the accuracy constraint imply?
 - [ ] Rapidly update displayed frequencies
 - [ ] Show "noise" when frequencies are not playing
-- What does that mean?
 - [ ] Display frequencies only when they are of large enough magnitude
-- What is the threshold for "large enough"
+- Experiment to figure out the threshold. Might be -20 to -10 dB
 - [ ] Have a way to "lock in" the last frequencies of large magnitude detercted on the display
-- Is this as separate labels or using the labels that display the 2 loudest frequencies? Does that contradict the show "noise" when frequencies are not playing?
 - [ ] Do not update the UILabels if no large magnitude frequencies are detected.
-- Is that what is meant by "lock in" the last loudest frequencies?
 - [ ] Distinguish tones at least 50Hz apart that last for 200ms or more
-- How does this constrain buffer size, FFT size, and windoes for finding maxima
+- How does this constrain buffer size, FFT size, and windows for finding maxima
 - [ ] Distinguish between ooooo and ahhhh vowel sounds using the largest two frequencies.
 - [ ] Display if the sound is oooo or ahhhh as a separate UILabel
 - [ ] Take a video of the app working to verify the functionality using an external sound source
