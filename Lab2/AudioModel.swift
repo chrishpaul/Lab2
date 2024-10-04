@@ -215,16 +215,23 @@ class AudioModel {
     
     private func findPeaks(){
         let midWindowIndex = windowSize/2
+        var maxMagnitudes: Array<Float> = Array(repeating: THRESHOLD, count: 2)
+        var maxFrequencies: Array<Int> = Array(repeating: -1, count: 2)
+        
         //print("Mid Window Index: ", midWindowIndex)
-        var peakArray: Array<Float> = Array(repeating: THRESHOLD, count: fftData.count - windowSize)
-        for i in 0..<peakArray.count{
+        //var peakArray: Array<Float> = Array(repeating: THRESHOLD, count: fftData.count - windowSize)
+        let numWindows = fftData.count - windowSize + 1
+        //for i in 0..<peakArray.count{
+        for i in 0..<numWindows{
             let window = Array(fftData[i..<i+windowSize])
             let max = window.max()
-            if max! > THRESHOLD && max == window[midWindowIndex]{
-                peakArray[i] = max!
-                print("Peak Found: ", i, " : ", max )
+            if max == window[midWindowIndex] && max! > maxMagnitudes.min()! {
+                let replaceIndex = maxMagnitudes.firstIndex(of: maxMagnitudes.min()!)
+                maxMagnitudes[replaceIndex!] = max!
+                maxFrequencies[replaceIndex!] = i
             }
         }
+        print("Max Magnitudes: ", maxMagnitudes, " Max Frequencies: ", maxFrequencies )
     }
     
     //==========================================
