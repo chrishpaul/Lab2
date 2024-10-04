@@ -8,15 +8,15 @@ Requirements & Tasks:
 - [ ] Use proper coding techniques and naming conventions for all programming languages.
 
 Module A
-- [ ] Read from the microphone
-- [ ] Take FFT of the incoming audio stream
+- [x] Read from the microphone
+- [x] Take FFT of the incoming audio stream
 - [ ] Design and document an efficent algorithm to find frequencies of 2 loudest tones to +-3Hz (peak finding for two tones)
 - [ ] Display the frequency of the two loudest tones within +-3Hz accuracy in UILabels
 - [ ] Rapidly update displayed frequencies
 - [ ] Show "noise" when frequencies are not playing
 - [ ] Display frequencies only when they are of large enough magnitude
 - Experiment to figure out the threshold. Might be -20 to -10 dB
-- [ ] Have a way to "lock in" the last frequencies of large magnitude detercted on the display
+- [ ] Have a way to "lock in" the last frequencies of large magnitude detected on the display
 - [ ] Do not update the UILabels if no large magnitude frequencies are detected.
 - [ ] Distinguish tones at least 50Hz apart that last for 200ms or more
 - How does this constrain buffer size, FFT size, and windows for finding maxima
