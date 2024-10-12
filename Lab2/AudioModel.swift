@@ -15,9 +15,9 @@ class AudioModel {
     private var BUFFER_SIZE:Int             //Audio buffer size
     private var TONE_SEPARATION:Int         //Minimum difference between tones that must be distinguished in Hz
     private var THRESHOLD:Float = 10.0      //Threshold in dB for frequency magnitude to not be considered noise
-    private var timer:Timer?
-    private var lowBandwidth:Int = 3
-    private var highBandwidth:Int = 4
+    private var timer:Timer?                //Timer for fetching new data and calculating FFT
+    private var lowBandwidth:Int = 3        //Number of frequency bins below target frequency considered for frequency reflection
+    private var highBandwidth:Int = 4       //Number of frequency bins above target frequency considered for frequency reflection
     
     private lazy var frequencyResolution:Float = {
         //frequency resolution calculation, k = Fs/N
@@ -34,12 +34,12 @@ class AudioModel {
         return windowSize/2
     }()
 
-    // these properties are for interfacing with the API
+    // these public properties are for interfacing with the API
     // the user can access these properties at any time and display them if they like
     var timeData:[Float]
     var fftData:[Float]
-    var maxFrequencies:[Float]          //public property that holds the two frequencies with greatest magnitude
-    var gesture:String
+    var maxFrequencies:[Float]          //holds the two frequencies with greatest magnitude
+    var gesture:String                  //the gesture indicated by frequency reflection
     
     lazy var samplingRate:Int = {
         return Int(self.audioManager!.samplingRate)
@@ -97,6 +97,7 @@ class AudioModel {
         }
     }
     
+    // Call this to stop audio being handled by the model
     func stop(){
         if let manager = self.audioManager{
             manager.pause()
@@ -111,62 +112,8 @@ class AudioModel {
         fftHelper = nil
     }
     
-    func getSound()->String{
-        //Empirically checking the ratio between the two highest frequencies,
-        //it appeared that there the second frequency was double the first frequency
-        //in the "ooo" case
-        
-        let f1 = maxFrequencies.min()
-        let f2 = maxFrequencies.max()
-        
-        let freqRatio = (f2!/f1!).rounded()
-        
-        if freqRatio == 2.0{
-            return "ooo"
-        }else{
-            return "aah"
-        }
-    }
-    
-    func updateBandwidth(){
-        if self.sineFrequency < 18000{
-            self.lowBandwidth = 3
-            self.highBandwidth = 4
-        }else{
-            self.lowBandwidth = 2
-            self.highBandwidth = 3
-        }
-    }
-    
-    //==========================================
-    // MARK: Private Properties
-    private lazy var audioManager:Novocaine? = {
-        return Novocaine.audioManager()
-    }()
-    
-    private lazy var fftHelper:FFTHelper? = {
-        return FFTHelper.init(fftSize: Int32(BUFFER_SIZE))
-    }()
-    
-    
-    private lazy var inputBuffer:CircularBuffer? = {
-        return CircularBuffer.init(numChannels: Int64(self.audioManager!.numInputChannels),
-                                   andBufferSize: Int64(BUFFER_SIZE))
-    }()
-
-    //==========================================
-    // MARK: Private Methods
-    private func printProperties(){
-        
-        print("Sampling rate: ", samplingRate)
-        print("Frequency resolution: ", frequencyResolution)
-        print("Window size: ", windowSize)
-        print("Buffer size: ", self.BUFFER_SIZE)
-    }
-    
+    //Function to find the two frequencies with the largest magnitudes
     func findPeaks(){
-    
-    //private func findPeaks(){
         
         //arrays to hold max magnitudes and index of corresponding window where max found
         var maxMagnitudes: Array<Float> = Array(repeating: THRESHOLD, count: 2)
@@ -209,35 +156,66 @@ class AudioModel {
         }
     }
     
-    //Function that uses quadratic approximation to determine the frequency peak
-    //as the vertex of a parabaola through neighboring points
-    private func fPeakByQuadApprox(fftIndex:Int)->Float{
-        let f2 = Float(fftIndex) * frequencyResolution
-        let m2 = fftData[fftIndex]
-        let m1 = fftData[fftIndex-1]
-        let m3 = fftData[fftIndex+1]
-        let fPeak = f2 + ((m1 - m3)/(m3 - 2*m2 + m1)) * self.frequencyResolution/2
-        return fPeak
+    func getSound()->String{
+        //Empirically checking the ratio between the two highest frequencies,
+        //it appeared that there the second frequency was double the first frequency
+        //in the "ooo" case
+        
+        let f1 = maxFrequencies.min()
+        let f2 = maxFrequencies.max()
+        
+        //Calculate ratio of higher frequency to lower frequency
+        //for the 2 frequencies with the largest magnitudes
+        let freqRatio = (f2!/f1!).rounded()
+        
+        //A ratio of about 2.0 indicates 'ooo' sound
+        if freqRatio == 2.0{
+            return "ooo"
+        }else{
+            return "aah"
+        }
+    }
+    
+    //Sets the threshold for the minimum distances in frequency bins to consider for Doppler effect, based on the original frequency.
+    func updateBandwidth(){
+        //We detect the Doppler effect by observing that neighboring frequency bins see an increase in magnitude.
+        //When the magnitude crosses over 0 in bins that are usually under 0, we note that reflection is occurring.
+        //We empirically determined the baseline bandwidth of frequency bins that have positive magnitude (decibels) when there is no reflection
+        //We use this to set the distance bins must be away from the frequency bin corresponding to the original frequency.
+        
+        //For frequencies under 18kHz, only consider bins that are at least 3 bins lower or 4 bins higher than the original
+        if self.sineFrequency < 18000{
+            self.lowBandwidth = 3
+            self.highBandwidth = 4
+        }else{                      //over 18kHz, consider bins that are at least 2 bins lower or 3 bins higher than the original
+            self.lowBandwidth = 2
+            self.highBandwidth = 3
+        }
     }
     
     func detectGestures(){
-    
-    //private func detectGestures(){
+        //To detect gestures, we check for an increase in magnitude of frequency bins centered around the original frequency.
+        //The original frequency bin and its immediate neighboring bins have a positive magnitude when no gesturing takes place.
+        //We refer to the number of neighbors on the lower and higher sides as the original bandwidth.
+        //We established the original bandwidth baseline emprically and observed that it changes depending on the original frequency.
+        //We check the neighboring bins that are outside of the original bandwidth for an increase in magnitude (crossing over 0).
+        //We independently check lower frequencies and higher frequencies to see if the magnitude crosses over 0.
+        //The further away from the original bin that this crossing happens, the stronger the effect of the reflection.
+        //We compare the effect on lower neighbors to higher neighbors to determine in which direction the gesture takes place.
+        
         let index = Int(sineFrequency/frequencyResolution)     //Index of bin corresponding to sine wave frequency
         var gestureAway:Bool = false                //Flag for conditions for geturing away
         var gestureTowards:Bool = false             //Flag for conditions for geturing towards
         
         
-        //The fft magnitude in bins neighboring the bin corresponding to the sine wave were observed to be less than 0.0
-        //when there was no doppler effect. For an fft magnitude buffer of size 2048, this was true for bins with index <= index of sine frequency - 2 and index >= index + 3.
-        let lowFreqArray = Array(fftData[index-10...index-self.lowBandwidth])       //Neighboring bins of lower frequency
-        var highFreqArray = Array(fftData[index+self.highBandwidth...index+10])      //Neighboring bins of higher frequency
-        vDSP.reverse(&highFreqArray)                                //Reverse order of higher frequency bins for later comparison
+        let lowFreqArray = Array(fftData[index-10...index-self.lowBandwidth])       //Neighboring bins of lower frequency outside original bandwidth
+        var highFreqArray = Array(fftData[index+self.highBandwidth...index+10])      //Neighboring bins of higher frequency outside original bandwidth
+        vDSP.reverse(&highFreqArray)                                //Reverse order of higher frequency bins to compare distance from original bin
         let lowFreqLength = vDSP_Length(lowFreqArray.count)
         let highFreqLength = vDSP_Length(highFreqArray.count)
-        var lastCrossingLow: vDSP_Length = 0                        //Index in lower frequencies where amplitude sign changes
+        var lastCrossingLow: vDSP_Length = 0                        //Index in lower frequencies where amplitude sign changes (indicates distance)
         var numCrossingsLow: vDSP_Length = 0
-        var lastCrossingHigh: vDSP_Length = 0                       //Index in higher frequencies where amplitude sign changes
+        var lastCrossingHigh: vDSP_Length = 0                       //Index in higher frequencies where amplitude sign changes (indicates distance)
         var numCrossingsHigh: vDSP_Length = 0
         
         //Find zero crossings in amplitude for frequencies immediately higher and lower than peak frequency.
@@ -250,12 +228,15 @@ class AudioModel {
         if numCrossingsHigh > 0{    //Magnitude sign changes in neigboring higher frequency bins
             gestureTowards = true   //Conditions for gesturing towards met
         }
-        if gestureAway && gestureTowards{
-            if lastCrossingLow < lastCrossingHigh{
+        
+        //Set gesture public property
+        if gestureAway && gestureTowards{               //Both lower and higher frequencies experienced increase in magnitude
+            //Check which side experienced the greater effect (i.e., magnitude change occurred for frequencies further from original)
+            if lastCrossingLow < lastCrossingHigh{      //Check if effect was stronger on the lower frequencies
                 self.gesture = "Gesturing Away"
-            }else if lastCrossingHigh < lastCrossingLow{
+            }else if lastCrossingHigh < lastCrossingLow{    //Check if effect was stronger on the higher frequencies
                 self.gesture = "Gesturing Towards"
-            }else{
+            }else{                                          //Cannot determine
                 self.gesture = "Not gesturing"
             }
         }else if gestureAway{
@@ -265,8 +246,49 @@ class AudioModel {
         }else{
             self.gesture = "Not gesturing"
         }
-        
     }
+
+    
+    //==========================================
+    // MARK: Private Properties
+    private lazy var audioManager:Novocaine? = {
+        return Novocaine.audioManager()
+    }()
+    
+    private lazy var fftHelper:FFTHelper? = {
+        return FFTHelper.init(fftSize: Int32(BUFFER_SIZE))
+    }()
+
+    private lazy var inputBuffer:CircularBuffer? = {
+        return CircularBuffer.init(numChannels: Int64(self.audioManager!.numInputChannels),
+                                   andBufferSize: Int64(BUFFER_SIZE))
+    }()
+
+    //==========================================
+    // MARK: Private Methods
+    private func printProperties(){
+    // For testing purposes
+        print("Sampling rate: ", samplingRate)
+        print("Frequency resolution: ", frequencyResolution)
+        print("Window size: ", windowSize)
+        print("Buffer size: ", self.BUFFER_SIZE)
+    }
+    
+    
+    
+    //Function that uses quadratic approximation to determine the frequency peak
+    //as the vertex of a parabaola through neighboring points
+    private func fPeakByQuadApprox(fftIndex:Int)->Float{
+        let f2 = Float(fftIndex) * frequencyResolution
+        let m2 = fftData[fftIndex]
+        let m1 = fftData[fftIndex-1]
+        let m3 = fftData[fftIndex+1]
+        
+        //Using the quadratic approximation function shown in class
+        let fPeak = f2 + ((m1 - m3)/(m3 - 2*m2 + m1)) * self.frequencyResolution/2
+        return fPeak
+    }
+    
     
     //==========================================
     // MARK: Model Callback Methods
@@ -284,14 +306,8 @@ class AudioModel {
             //   timeData: the raw audio samples
             //   fftData:  the FFT of those same samples
             
-            // Find frequencies with peak magnitude in new fft data
-            //findPeaks()
-            
-            //detectGestures()
         }
     }
-    
-
     
     //==========================================
     // MARK: Audiocard Callbacks
@@ -318,10 +334,7 @@ class AudioModel {
     }
     
     private func handleSpeakerQueryWithSinusoid(data:Optional<UnsafeMutablePointer<Float>>, numFrames:UInt32, numChannels: UInt32){
-        // while pretty fast, this loop is still not quite as fast as
-        // writing the code in c, so I placed a function in Novocaine to do it for you
-        // use setOutputBlockToPlaySineWave() in Novocaine
-        // EDIT: fixed in 2023
+        // Plays a sinewave to the speakers
         if let arrayData = data{
             var i = 0
             let chan = Int(numChannels)
