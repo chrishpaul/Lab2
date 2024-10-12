@@ -18,19 +18,9 @@ class AudioModelB {
     lazy var samplingRate:Int = {
         return Int(self.audioManager!.samplingRate)
     }()
-     
-    // this is a computed property in swift
-    // when asked for, the array will be calculated from the input buffer
-    /*
-    var timeData:[Float]{
-        get{ //override getter, get frech data from buffer
-            self.inputBuffer!.fetchFreshData(&_timeData,
-                                             withNumSamples: Int64(BUFFER_SIZE))
-            return _timeData
-        }
-    }
-     */
-    var volume:Float = 0.1 // user setable volume
+    var lowBandwidth:Int
+    var highBandwidth:Int
+    //var volume:Float = 0.1 // user setable volume
     
     // MARK: Public Methods
     init(buffer_size:Int) {
@@ -39,6 +29,8 @@ class AudioModelB {
         timeData = Array.init(repeating: 0.0, count: BUFFER_SIZE)
         fftData = Array.init(repeating: 0.0, count: BUFFER_SIZE/2)
         gesture = "Not gesturing"
+        lowBandwidth = 3
+        highBandwidth = 4
     }
     
     // public function for starting processing of microphone data
@@ -69,6 +61,15 @@ class AudioModelB {
         }
     }
     
+    func updateBandwidth(){
+        if self.sineFrequency < 18000{
+            self.lowBandwidth = 3
+            self.highBandwidth = 4
+        }else{
+            self.lowBandwidth = 2
+            self.highBandwidth = 3
+        }
+    }
     
     //==========================================
     // MARK: Private Properties
@@ -112,43 +113,51 @@ class AudioModelB {
             fftHelper!.performForwardFFT(withData: &timeData,
                                          andCopydBMagnitudeToBuffer: &fftData) // fft result is copied into fftData array
             
-            // at this point, we have saved the data to the arrays:
-            //   timeData: the raw audio samples
-            //   fftData:  the FFT of those same samples
-            // the user can now use these variables however they like
+            let index = Int(sineFrequency/freqRes!)     //Index of bin corresponding to sine wave frequency
+            var gestureAway:Bool = false                //Flag for conditions for geturing away
+            var gestureTowards:Bool = false             //Flag for conditions for geturing towards
             
-            var index = Int(sineFrequency/freqRes!)
-            //var startIndex = index - 100
-            //print("Index: ", startIndex, " : ", index)
-            var newBelow = Array(fftData[index-10..<index])
-            var newAbove = Array(fftData[index+1...index+10])
-            var diffBelow = vDSP.mean(vDSP.subtract(newBelow, arrayBelow))
-            var diffAbove = vDSP.mean(vDSP.subtract(newAbove, arrayAbove))
-            if (diffBelow > 1.0 && diffAbove < 0.0) {
-                print("Gesturing Away")
-            }else if (diffAbove > 1.0 && diffBelow < 0.0) {
-                print("Gesturing Towards")
-            }
-            //print("Diff below: ", diffBelow, " , ", diffAbove)
-            arrayBelow = newBelow
-            arrayAbove = newAbove
-            //vDSP_sve(arrayBelow, 1, &meanBelow, vDSP_Length(arrayBelow.count))
-            //vDSP_sve(arrayAbove, 1, &meanAbove, vDSP_Length(arrayAbove.count))
-            //vDSP_vrsum(arrayBelow, 1, &meanBelow, <#T##__C: UnsafeMutablePointer<Float>##UnsafeMutablePointer<Float>#>, <#T##__IC: vDSP_Stride##vDSP_Stride#>, <#T##__N: vDSP_Length##vDSP_Length#>)
-            //vDSP_measqv(arrayBelow, 1, &meanBelow, vDSP_Length(arrayBelow.count))
-            //vDSP_meanv(arrayBelow, 1, &meanBelow,100)
-            /*
-            var diff = meanAbove - meanBelow
-            var gesture = "Not gesturing"
-            if diff < 70{
-                gesture = "Gesturing away"
-                print("Gesture: ", gesture)
-            }else if diff > 130{
-                gesture = "Gesturing towards"
-                print("Gesture: ", gesture)
-            }
-            //print("Gesture: ", diff)*/
             
+            //The fft magnitude in bins neighboring the bin corresponding to the sine wave were observed to be less than 0.0
+            //when there was no doppler effect. For an fft magnitude buffer of size 2048, this was true for bins with index <= index of sine frequency - 2 and index >= index + 3.
+            print(Array(fftData[index-10...index+10]))
+            let lowFreqArray = Array(fftData[index-10...index-self.lowBandwidth])       //Neighboring bins of lower frequency
+            var highFreqArray = Array(fftData[index+self.highBandwidth...index+10])      //Neighboring bins of higher frequency
+            vDSP.reverse(&highFreqArray)                                //Reverse order of higher frequency bins for later comparison
+            let lowFreqLength = vDSP_Length(lowFreqArray.count)
+            let highFreqLength = vDSP_Length(highFreqArray.count)
+            var lastCrossingLow: vDSP_Length = 0                        //Index in lower frequencies where amplitude sign changes
+            var numCrossingsLow: vDSP_Length = 0
+            var lastCrossingHigh: vDSP_Length = 0                       //Index in higher frequencies where amplitude sign changes
+            var numCrossingsHigh: vDSP_Length = 0
+            
+            //Find zero crossings in amplitude for frequencies immediately higher and lower than peak frequency.
+            vDSP_nzcros(lowFreqArray, 1, lowFreqLength, &lastCrossingLow, &numCrossingsLow, lowFreqLength)
+            vDSP_nzcros(highFreqArray, 1, highFreqLength, &lastCrossingHigh, &numCrossingsHigh, highFreqLength)
+            
+            if numCrossingsLow > 0{     //Magnitude sign changes in neighboring lower frequency bins
+                gestureAway = true      //Conditions for gesturing away met
+            }
+            if numCrossingsHigh > 0{    //Magnitude sign changes in neigboring higher frequency bins
+                gestureTowards = true   //Conditions for gesturing towards met
+            }
+            if gestureAway && gestureTowards{
+                if lastCrossingLow < lastCrossingHigh{
+                    self.gesture = "Gesturing Away"
+                }else if lastCrossingHigh < lastCrossingLow{
+                    self.gesture = "Gesturing Towards"
+                }else{
+                    self.gesture = "Not gesturing"
+                }
+            }else if gestureAway{
+                self.gesture = "Gesturing Away"
+            }else if gestureTowards{
+                self.gesture = "Gesturing Towards"
+            }else{
+                self.gesture = "Not gesturing"
+            }
+            //print(gesture)
+
         }
     }
     
@@ -200,8 +209,10 @@ class AudioModelB {
                     i+=2
                 }
             }
+            //var volume:Float =
             // adjust volume of audio file output
-            vDSP_vsmul(arrayData, 1, &(self.volume), arrayData, 1, vDSP_Length(numFrames*numChannels))
+            //vDSP_vsmul(arrayData, 1, &(self.volume), arrayData, 1, vDSP_Length(numFrames*numChannels))
+            //vDSP_vsmul(arrayData, 1, &volume, arrayData, 1, vDSP_Length(numFrames*numChannels))
                             
         }
     }

@@ -22,6 +22,8 @@ class ModBViewController: UIViewController {
     lazy var graph:MetalGraph? = {
         return MetalGraph(userView: self.graphView)
     }()
+    
+    let stepValue:Float = 100.0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,7 +32,7 @@ class ModBViewController: UIViewController {
         if let graph = self.graph {
             graph.addGraph(withName: "fftZoomed",
                             shouldNormalizeForFFT: true,
-                            numPointsInGraph: 200) // 300 points to display
+                            numPointsInGraph: 100) // 300 points to display
             
      /*
             graph.addGraph(withName: "fft",
@@ -47,7 +49,7 @@ class ModBViewController: UIViewController {
         
         // Do any additional setup after loading the view.
         audio.startProcessingSinewaveForPlayback(withFreq: 17000)
-        audio.startMicrophoneProcessing(withFps: 20)
+        audio.startMicrophoneProcessing(withFps: 60)
         audio.play()
         
         // run the loop for updating the graph peridocially
@@ -57,11 +59,14 @@ class ModBViewController: UIViewController {
         }
     }
     
+    @IBOutlet weak var gestureLabel: UILabel!
     @IBOutlet weak var graphView: UIView!
     @IBOutlet weak var freqLabel: UILabel!
+    @IBOutlet weak var freqSlider: UISlider!
     @IBAction func changeFrequency(_ sender: UISlider) {
-        self.audio.sineFrequency = sender.value
-        freqLabel.text = "Frequency: \(sender.value) Hz"
+        self.audio.sineFrequency = roundf(sender.value / self.stepValue)*self.stepValue
+        self.audio.updateBandwidth()
+        freqLabel.text = "Frequency: \(self.audio.sineFrequency) Hz"
     }
     
     // periodically, update the graph with refreshed FFT Data
@@ -83,8 +88,13 @@ class ModBViewController: UIViewController {
             */
             // we can start at about 150Hz and show the next 300 points
             // actual Hz = f_0 * N/F_s
-            let startIdx:Int = 17500 * AudioConstants.AUDIO_BUFFER_SIZE/audio.samplingRate
-            let subArray:[Float] = Array(self.audio.fftData[startIdx...startIdx+200])
+            let freq = Int(self.audio.sineFrequency)
+            //let centerIndex:Int = freq * AudioConstants.AUDIO_BUFFER_SIZE/audio.samplingRate
+            let centerIdx:Int = freq * AudioConstants.AUDIO_BUFFER_SIZE/audio.samplingRate
+            let startIdx = centerIdx - 50
+            let endIdx = centerIdx + 50
+            let subArray:[Float] = Array(self.audio.fftData[startIdx...endIdx])
+            //let subArray:[Float] = Array(self.audio.fftData[startIdx...startIdx+200])
             graph.updateGraph(
                 data: subArray,
                 forKey: "fftZoomed"
@@ -93,6 +103,8 @@ class ModBViewController: UIViewController {
             //var mx:Float = 0
             //vDSP_maxv(&self.audio.fftData[startIdx], 1, &mx, vDSP_Length(300))
         }
+        gestureLabel.text = self.audio.gesture
+        
         
     }
     

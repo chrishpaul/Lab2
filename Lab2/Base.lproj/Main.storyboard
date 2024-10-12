@@ -93,16 +93,22 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="18500" minValue="17000" maxValue="20000" translatesAutoresizingMaskIntoConstraints="NO" id="IzR-dz-XoX">
+                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="17000" minValue="17000" maxValue="20000" translatesAutoresizingMaskIntoConstraints="NO" id="IzR-dz-XoX">
                                 <rect key="frame" x="7" y="184" width="379" height="31"/>
                                 <connections>
                                     <action selector="changeFrequency:" destination="UvK-Fy-4M6" eventType="valueChanged" id="ors-9a-DcT"/>
                                 </connections>
                             </slider>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BI1-gF-t1k">
-                                <rect key="frame" x="33" y="250" width="327" height="542"/>
+                                <rect key="frame" x="33" y="250" width="327" height="435"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                             </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Gesture" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QCu-gq-DQx">
+                                <rect key="frame" x="135.66666666666666" y="733" width="121.99999999999997" height="43"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="36"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="5Oe-PD-MRr"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -110,11 +116,13 @@
                             <constraint firstItem="8EF-E1-at9" firstAttribute="centerY" secondItem="5Oe-PD-MRr" secondAttribute="centerY" id="8Fc-wI-tmr"/>
                             <constraint firstItem="8EF-E1-at9" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="B9Q-4u-gzt"/>
                             <constraint firstItem="MLF-0v-5Lx" firstAttribute="top" secondItem="5Oe-PD-MRr" secondAttribute="top" constant="38" id="CKB-h8-b8F"/>
+                            <constraint firstItem="5Oe-PD-MRr" firstAttribute="bottom" secondItem="QCu-gq-DQx" secondAttribute="bottom" constant="42" id="G3r-mQ-zl9"/>
                             <constraint firstItem="BI1-gF-t1k" firstAttribute="leading" secondItem="5Oe-PD-MRr" secondAttribute="leading" constant="33" id="GPO-Ub-BZq"/>
                             <constraint firstItem="BI1-gF-t1k" firstAttribute="top" secondItem="IzR-dz-XoX" secondAttribute="bottom" constant="36" id="PcN-JX-Qbn"/>
                             <constraint firstItem="MLF-0v-5Lx" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="S5p-Eu-2eq"/>
                             <constraint firstItem="BI1-gF-t1k" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="SOq-dX-wJn"/>
-                            <constraint firstItem="5Oe-PD-MRr" firstAttribute="bottom" secondItem="BI1-gF-t1k" secondAttribute="bottom" constant="26" id="UIn-gy-8RE"/>
+                            <constraint firstItem="QCu-gq-DQx" firstAttribute="top" secondItem="BI1-gF-t1k" secondAttribute="bottom" constant="48" id="TvU-qq-cLM"/>
+                            <constraint firstItem="QCu-gq-DQx" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="ddK-uD-lQG"/>
                             <constraint firstItem="IzR-dz-XoX" firstAttribute="leading" secondItem="5Oe-PD-MRr" secondAttribute="leading" constant="9" id="loZ-ZA-wwB"/>
                             <constraint firstItem="IzR-dz-XoX" firstAttribute="centerX" secondItem="MLF-0v-5Lx" secondAttribute="centerX" id="ltP-gR-I46"/>
                             <constraint firstItem="IzR-dz-XoX" firstAttribute="top" secondItem="MLF-0v-5Lx" secondAttribute="bottom" constant="22" id="x9y-xY-N0G"/>
@@ -123,6 +131,8 @@
                     <navigationItem key="navigationItem" id="RQ1-lY-ZvJ"/>
                     <connections>
                         <outlet property="freqLabel" destination="MLF-0v-5Lx" id="OBm-8g-B6T"/>
+                        <outlet property="freqSlider" destination="IzR-dz-XoX" id="AXE-0C-Dyp"/>
+                        <outlet property="gestureLabel" destination="QCu-gq-DQx" id="1Ej-KF-CrA"/>
                         <outlet property="graphView" destination="BI1-gF-t1k" id="qpO-TZ-Z42"/>
                     </connections>
                 </viewController>

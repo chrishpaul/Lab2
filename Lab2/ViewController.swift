@@ -14,7 +14,11 @@ class ViewController: UIViewController {
     @IBOutlet weak var soundLabel: UILabel!             //Displays if sound is 'ooo' or 'aah'
     
     struct AudioConstants{
-        static let AUDIO_BUFFER_SIZE = 1024*4           //Max size of buffer to allow detection of tones played for 200ms
+        //A buffer size of 4096 was selected to allow detection of tones played for at least 200ms
+        //With a sampling frequency of 48kHz, the frame length will be 85ms (4096/48000).
+        //This ensures that a 200ms tone will span at least 3 frames, which would include at least 1 full frame
+        //making it easily detectable
+        static let AUDIO_BUFFER_SIZE = 4096           //Max size of buffer to allow detection of tones played for 200ms
         static let TONE_SEPARATION = 50                 //Separation in Hz of tones that need to be distinguished
     }
     
