@@ -76,7 +76,7 @@
         <!--Module B-->
         <scene sceneID="a1t-3w-NKq">
             <objects>
-                <viewController title="Module B" id="UvK-Fy-4M6" sceneMemberID="viewController">
+                <viewController title="Module B" id="UvK-Fy-4M6" customClass="ModBViewController" customModule="Lab2" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="9Jd-Vd-HgU">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -87,19 +87,58 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Frequency: 17000 Hz" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLF-0v-5Lx">
+                                <rect key="frame" x="115.66666666666669" y="141" width="162" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="17000" minValue="17000" maxValue="20000" translatesAutoresizingMaskIntoConstraints="NO" id="IzR-dz-XoX">
+                                <rect key="frame" x="7" y="184" width="379" height="31"/>
+                                <connections>
+                                    <action selector="changeFrequency:" destination="UvK-Fy-4M6" eventType="valueChanged" id="ors-9a-DcT"/>
+                                </connections>
+                            </slider>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BI1-gF-t1k">
+                                <rect key="frame" x="33" y="250" width="327" height="435"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Gesture" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QCu-gq-DQx">
+                                <rect key="frame" x="135.66666666666666" y="733" width="121.99999999999997" height="43"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="36"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="5Oe-PD-MRr"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstItem="8EF-E1-at9" firstAttribute="centerY" secondItem="5Oe-PD-MRr" secondAttribute="centerY" id="8Fc-wI-tmr"/>
                             <constraint firstItem="8EF-E1-at9" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="B9Q-4u-gzt"/>
+                            <constraint firstItem="MLF-0v-5Lx" firstAttribute="top" secondItem="5Oe-PD-MRr" secondAttribute="top" constant="38" id="CKB-h8-b8F"/>
+                            <constraint firstItem="5Oe-PD-MRr" firstAttribute="bottom" secondItem="QCu-gq-DQx" secondAttribute="bottom" constant="42" id="G3r-mQ-zl9"/>
+                            <constraint firstItem="BI1-gF-t1k" firstAttribute="leading" secondItem="5Oe-PD-MRr" secondAttribute="leading" constant="33" id="GPO-Ub-BZq"/>
+                            <constraint firstItem="BI1-gF-t1k" firstAttribute="top" secondItem="IzR-dz-XoX" secondAttribute="bottom" constant="36" id="PcN-JX-Qbn"/>
+                            <constraint firstItem="MLF-0v-5Lx" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="S5p-Eu-2eq"/>
+                            <constraint firstItem="BI1-gF-t1k" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="SOq-dX-wJn"/>
+                            <constraint firstItem="QCu-gq-DQx" firstAttribute="top" secondItem="BI1-gF-t1k" secondAttribute="bottom" constant="48" id="TvU-qq-cLM"/>
+                            <constraint firstItem="QCu-gq-DQx" firstAttribute="centerX" secondItem="5Oe-PD-MRr" secondAttribute="centerX" id="ddK-uD-lQG"/>
+                            <constraint firstItem="IzR-dz-XoX" firstAttribute="leading" secondItem="5Oe-PD-MRr" secondAttribute="leading" constant="9" id="loZ-ZA-wwB"/>
+                            <constraint firstItem="IzR-dz-XoX" firstAttribute="centerX" secondItem="MLF-0v-5Lx" secondAttribute="centerX" id="ltP-gR-I46"/>
+                            <constraint firstItem="IzR-dz-XoX" firstAttribute="top" secondItem="MLF-0v-5Lx" secondAttribute="bottom" constant="22" id="x9y-xY-N0G"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="RQ1-lY-ZvJ"/>
+                    <connections>
+                        <outlet property="freqLabel" destination="MLF-0v-5Lx" id="OBm-8g-B6T"/>
+                        <outlet property="freqSlider" destination="IzR-dz-XoX" id="AXE-0C-Dyp"/>
+                        <outlet property="gestureLabel" destination="QCu-gq-DQx" id="1Ej-KF-CrA"/>
+                        <outlet property="graphView" destination="BI1-gF-t1k" id="qpO-TZ-Z42"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="f3e-Tb-Nmq" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="172" y="428"/>
+            <point key="canvasLocation" x="171.75572519083968" y="427.46478873239437"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="P0b-nX-OX3">
@@ -125,8 +164,26 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Frequency 1" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Rdt-11-m9T">
+                                <rect key="frame" x="98" y="200" width="197" height="46"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="38"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Frequency 2" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mNQ-DM-P0H">
+                                <rect key="frame" x="95.666666666666686" y="352" width="202" height="46"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="38"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sound" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="f2F-02-iVJ">
+                                <rect key="frame" x="154.66666666666666" y="527" width="84" height="36"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="30"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Module A" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YLu-OF-cuB">
-                                <rect key="frame" x="160" y="450" width="73" height="21"/>
+                                <rect key="frame" x="160" y="126.99999999999999" width="73" height="20.333333333333329"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
@@ -135,11 +192,22 @@
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
-                            <constraint firstItem="YLu-OF-cuB" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="gty-pK-eRn"/>
-                            <constraint firstItem="YLu-OF-cuB" firstAttribute="centerY" secondItem="6Tk-OE-BBY" secondAttribute="centerY" id="qKJ-bJ-ATZ"/>
+                            <constraint firstItem="Rdt-11-m9T" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="1iW-8x-rtV"/>
+                            <constraint firstItem="mNQ-DM-P0H" firstAttribute="centerX" secondItem="Rdt-11-m9T" secondAttribute="centerX" id="4G4-hM-PS5"/>
+                            <constraint firstItem="f2F-02-iVJ" firstAttribute="top" secondItem="mNQ-DM-P0H" secondAttribute="bottom" constant="129" id="C8k-lT-w63"/>
+                            <constraint firstItem="YLu-OF-cuB" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="24" id="FWv-gS-bHA"/>
+                            <constraint firstItem="YLu-OF-cuB" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="Ft1-rb-ppg"/>
+                            <constraint firstItem="Rdt-11-m9T" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="97" id="Igm-dh-GDP"/>
+                            <constraint firstItem="mNQ-DM-P0H" firstAttribute="top" secondItem="Rdt-11-m9T" secondAttribute="bottom" constant="106" id="eW9-gR-B2G"/>
+                            <constraint firstItem="f2F-02-iVJ" firstAttribute="centerX" secondItem="mNQ-DM-P0H" secondAttribute="centerX" id="keL-no-4QM"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="Vwz-3J-wk3"/>
+                    <connections>
+                        <outlet property="frequency1Label" destination="Rdt-11-m9T" id="Djg-QB-Xsy"/>
+                        <outlet property="frequency2Label" destination="mNQ-DM-P0H" id="PLA-bd-vgG"/>
+                        <outlet property="soundLabel" destination="f2F-02-iVJ" id="Coh-aM-Js7"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
