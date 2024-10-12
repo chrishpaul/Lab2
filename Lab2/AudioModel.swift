@@ -16,6 +16,8 @@ class AudioModel {
     private var TONE_SEPARATION:Int         //Minimum difference between tones that must be distinguished in Hz
     private var THRESHOLD:Float = 10.0      //Threshold in dB for frequency magnitude to not be considered noise
     private var timer:Timer?
+    private var lowBandwidth:Int = 3
+    private var highBandwidth:Int = 4
     
     private lazy var frequencyResolution:Float = {
         //frequency resolution calculation, k = Fs/N
@@ -33,10 +35,11 @@ class AudioModel {
     }()
 
     // these properties are for interfacing with the API
-    // the user can access these arrays at any time and plot them if they like
+    // the user can access these properties at any time and display them if they like
     var timeData:[Float]
     var fftData:[Float]
     var maxFrequencies:[Float]          //public property that holds the two frequencies with greatest magnitude
+    var gesture:String
     
     lazy var samplingRate:Int = {
         return Int(self.audioManager!.samplingRate)
@@ -46,7 +49,7 @@ class AudioModel {
     
     // MARK: Public Methods
     
-    init(buffer_size:Int, tone_separation:Int) {
+    init(buffer_size:Int, tone_separation:Int=50) {
         BUFFER_SIZE = buffer_size
         TONE_SEPARATION = tone_separation
 
@@ -54,6 +57,7 @@ class AudioModel {
         timeData = Array.init(repeating: 0.0, count: BUFFER_SIZE)
         fftData = Array.init(repeating: 0.0, count: BUFFER_SIZE/2)
         maxFrequencies = Array.init(repeating: 0.0, count: 2)
+        gesture = "Not gesturing"
     }
     
     // public function for starting processing of microphone data
@@ -67,6 +71,14 @@ class AudioModel {
             timer = Timer.scheduledTimer(withTimeInterval: 1.0/withFps, repeats: true) { _ in
                 self.runEveryInterval()
             }
+        }
+    }
+    
+    func startProcessingSinewaveForPlayback(withFreq:Float){
+        sineFrequency = withFreq
+        if let manager = self.audioManager{
+            // swift sine wave loop creation
+            manager.outputBlock = self.handleSpeakerQueryWithSinusoid
         }
     }
     
@@ -85,6 +97,20 @@ class AudioModel {
         }
     }
     
+    func stop(){
+        if let manager = self.audioManager{
+            manager.pause()
+            manager.inputBlock = nil
+            manager.outputBlock = nil
+        }
+        
+        if let buffer = self.inputBuffer{
+            buffer.clear() // just makes zeros
+        }
+        inputBuffer = nil
+        fftHelper = nil
+    }
+    
     func getSound()->String{
         //Empirically checking the ratio between the two highest frequencies,
         //it appeared that there the second frequency was double the first frequency
@@ -99,6 +125,16 @@ class AudioModel {
             return "ooo"
         }else{
             return "aah"
+        }
+    }
+    
+    func updateBandwidth(){
+        if self.sineFrequency < 18000{
+            self.lowBandwidth = 3
+            self.highBandwidth = 4
+        }else{
+            self.lowBandwidth = 2
+            self.highBandwidth = 3
         }
     }
     
@@ -128,7 +164,9 @@ class AudioModel {
         print("Buffer size: ", self.BUFFER_SIZE)
     }
     
-    private func findPeaks(){
+    func findPeaks(){
+    
+    //private func findPeaks(){
         
         //arrays to hold max magnitudes and index of corresponding window where max found
         var maxMagnitudes: Array<Float> = Array(repeating: THRESHOLD, count: 2)
@@ -182,6 +220,54 @@ class AudioModel {
         return fPeak
     }
     
+    func detectGestures(){
+    
+    //private func detectGestures(){
+        let index = Int(sineFrequency/frequencyResolution)     //Index of bin corresponding to sine wave frequency
+        var gestureAway:Bool = false                //Flag for conditions for geturing away
+        var gestureTowards:Bool = false             //Flag for conditions for geturing towards
+        
+        
+        //The fft magnitude in bins neighboring the bin corresponding to the sine wave were observed to be less than 0.0
+        //when there was no doppler effect. For an fft magnitude buffer of size 2048, this was true for bins with index <= index of sine frequency - 2 and index >= index + 3.
+        let lowFreqArray = Array(fftData[index-10...index-self.lowBandwidth])       //Neighboring bins of lower frequency
+        var highFreqArray = Array(fftData[index+self.highBandwidth...index+10])      //Neighboring bins of higher frequency
+        vDSP.reverse(&highFreqArray)                                //Reverse order of higher frequency bins for later comparison
+        let lowFreqLength = vDSP_Length(lowFreqArray.count)
+        let highFreqLength = vDSP_Length(highFreqArray.count)
+        var lastCrossingLow: vDSP_Length = 0                        //Index in lower frequencies where amplitude sign changes
+        var numCrossingsLow: vDSP_Length = 0
+        var lastCrossingHigh: vDSP_Length = 0                       //Index in higher frequencies where amplitude sign changes
+        var numCrossingsHigh: vDSP_Length = 0
+        
+        //Find zero crossings in amplitude for frequencies immediately higher and lower than peak frequency.
+        vDSP_nzcros(lowFreqArray, 1, lowFreqLength, &lastCrossingLow, &numCrossingsLow, lowFreqLength)
+        vDSP_nzcros(highFreqArray, 1, highFreqLength, &lastCrossingHigh, &numCrossingsHigh, highFreqLength)
+        
+        if numCrossingsLow > 0{     //Magnitude sign changes in neighboring lower frequency bins
+            gestureAway = true      //Conditions for gesturing away met
+        }
+        if numCrossingsHigh > 0{    //Magnitude sign changes in neigboring higher frequency bins
+            gestureTowards = true   //Conditions for gesturing towards met
+        }
+        if gestureAway && gestureTowards{
+            if lastCrossingLow < lastCrossingHigh{
+                self.gesture = "Gesturing Away"
+            }else if lastCrossingHigh < lastCrossingLow{
+                self.gesture = "Gesturing Towards"
+            }else{
+                self.gesture = "Not gesturing"
+            }
+        }else if gestureAway{
+            self.gesture = "Gesturing Away"
+        }else if gestureTowards{
+            self.gesture = "Gesturing Towards"
+        }else{
+            self.gesture = "Not gesturing"
+        }
+        
+    }
+    
     //==========================================
     // MARK: Model Callback Methods
     private func runEveryInterval(){
@@ -199,7 +285,9 @@ class AudioModel {
             //   fftData:  the FFT of those same samples
             
             // Find frequencies with peak magnitude in new fft data
-            findPeaks()
+            //findPeaks()
+            
+            //detectGestures()
         }
     }
     
@@ -209,9 +297,53 @@ class AudioModel {
     // MARK: Audiocard Callbacks
     // in obj-C it was (^InputBlock)(float *data, UInt32 numFrames, UInt32 numChannels)
     // and in swift this translates to:
+    
+    // SWIFT SINE WAVE
+    private var phase:Float = 0.0
+    private var phaseIncrement:Float = 0.0
+    private var sineWaveRepeatMax:Float = Float(2*Double.pi)
+    
+    var sineFrequency:Float = 0.0 { // frequency in Hz (changeable by user)
+        didSet{
+            if let manager = self.audioManager {
+                // if using swift for generating the sine wave: when changed, we need to update our increment
+                phaseIncrement = Float(2*Double.pi*Double(sineFrequency)/manager.samplingRate)
+            }
+        }
+    }
+    
     private func handleMicrophone (data:Optional<UnsafeMutablePointer<Float>>, numFrames:UInt32, numChannels: UInt32) {
         // copy samples from the microphone into circular buffer
         self.inputBuffer?.addNewFloatData(data, withNumSamples: Int64(numFrames))
+    }
+    
+    private func handleSpeakerQueryWithSinusoid(data:Optional<UnsafeMutablePointer<Float>>, numFrames:UInt32, numChannels: UInt32){
+        // while pretty fast, this loop is still not quite as fast as
+        // writing the code in c, so I placed a function in Novocaine to do it for you
+        // use setOutputBlockToPlaySineWave() in Novocaine
+        // EDIT: fixed in 2023
+        if let arrayData = data{
+            var i = 0
+            let chan = Int(numChannels)
+            let frame = Int(numFrames)
+            if chan==1{
+                while i<frame{
+                    arrayData[i] = sin(phase)
+                    phase += phaseIncrement
+                    if (phase >= sineWaveRepeatMax) { phase -= sineWaveRepeatMax }
+                    i+=1
+                }
+            }else if chan==2{
+                let len = frame*chan
+                while i<len{
+                    arrayData[i] = sin(phase)
+                    arrayData[i+1] = arrayData[i]
+                    phase += phaseIncrement
+                    if (phase >= sineWaveRepeatMax) { phase -= sineWaveRepeatMax }
+                    i+=2
+                }
+            }
+        }
     }
 }
 

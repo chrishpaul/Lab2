@@ -30,7 +30,6 @@ class ViewController: UIViewController {
     private var timer:Timer?
 
     override func viewDidLoad() {
-        print("test")
         super.viewDidLoad()
 
         // start up the audio model here, querying microphone
@@ -44,16 +43,17 @@ class ViewController: UIViewController {
     
     // periodically, update the graph with refreshed FFT Data
     func updateLabels(){
+        self.audio?.findPeaks()
         let maxFreqSorted = self.audio?.maxFrequencies.sorted()     //Frequencies sorted in magnitude order
-        frequency1Label.text = String(format: "%.2f Hz", maxFreqSorted![0])
-        frequency2Label.text = String(format: "%.2f Hz", maxFreqSorted![1])
+        frequency1Label.text = String(format: "%.0f Hz", maxFreqSorted![0])
+        frequency2Label.text = String(format: "%.0f Hz", maxFreqSorted![1])
         soundLabel.text = self.audio?.getSound()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         //Pause and nil audio when navigating away from view
         timer?.invalidate()
-        audio?.pause()
+        audio?.stop()
         audio = nil
         
         super.viewWillDisappear(animated)

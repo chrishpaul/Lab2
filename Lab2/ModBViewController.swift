@@ -9,113 +9,108 @@ import UIKit
 
 class ModBViewController: UIViewController {
     
-    // setup some constants we will use
-    struct AudioConstants{
-        static let AUDIO_BUFFER_SIZE = 1024*4
-    }
-    
-    // setup audio model, tell it how large to make a buffer
-    let audio = AudioModelB(buffer_size: AudioConstants.AUDIO_BUFFER_SIZE)
-    
-    // setup a view to show the different graphs
-    // this is like the canvas we will use to draw!
-    lazy var graph:MetalGraph? = {
-        return MetalGraph(userView: self.graphView)
-    }()
-    
-    let stepValue:Float = 100.0
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // add in a graph for displaying the audio
-        if let graph = self.graph {
-            graph.addGraph(withName: "fftZoomed",
-                            shouldNormalizeForFFT: true,
-                            numPointsInGraph: 100) // 300 points to display
-            
-     /*
-            graph.addGraph(withName: "fft",
-                            shouldNormalizeForFFT: true,
-                            numPointsInGraph: AudioConstants.AUDIO_BUFFER_SIZE/2)
-            // create a graph called "time" that we can update
-            graph.addGraph(withName: "time",
-                           numPointsInGraph: AudioConstants.AUDIO_BUFFER_SIZE)
-      */
-            
-            // make some nice vertical grids on the graph
-            graph.makeGrids()
-        }
-        
-        // Do any additional setup after loading the view.
-        audio.startProcessingSinewaveForPlayback(withFreq: 17000)
-        audio.startMicrophoneProcessing(withFps: 60)
-        audio.play()
-        
-        // run the loop for updating the graph peridocially
-        // 0.05 is about 20FPS update
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            self.updateGraph()
-        }
-    }
-    
+    //MARK: Outlets
     @IBOutlet weak var gestureLabel: UILabel!
     @IBOutlet weak var graphView: UIView!
     @IBOutlet weak var freqLabel: UILabel!
     @IBOutlet weak var freqSlider: UISlider!
-    @IBAction func changeFrequency(_ sender: UISlider) {
-        self.audio.sineFrequency = roundf(sender.value / self.stepValue)*self.stepValue
-        self.audio.updateBandwidth()
-        freqLabel.text = "Frequency: \(self.audio.sineFrequency) Hz"
+    
+    //MARK: Constants
+    // setup constants
+    struct AudioConstants{
+        static let AUDIO_BUFFER_SIZE = 1024*4
+    }
+    
+    //MARK: Variables
+    // setup audio model with specified buffer size
+    lazy var audio:AudioModel? = {
+        return AudioModel(buffer_size: AudioConstants.AUDIO_BUFFER_SIZE)
+    }()
+    
+    // setup a view to show the graph
+    lazy var graph:MetalGraph? = {
+        return MetalGraph(userView: self.graphView)
+    }()
+    
+    //Timer used to call update graph and gesture label
+    private var timer:Timer?
+    
+    //Used to control size of frequency steps allowed by slider
+    let stepValue:Float = 100.0
+
+    //MARK: View Update Functions
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // add in a graph for displaying the zoomed FFT
+        if let graph = self.graph {
+            graph.addGraph(withName: "fftZoomed",
+                            shouldNormalizeForFFT: true,
+                            numPointsInGraph: 100) // 100 points to display
+            
+            // make vertical grids on the graph
+            graph.makeGrids()
+        }
+        
+        // Begin playing sinewave on speakers and processing mic input
+        audio!.startProcessingSinewaveForPlayback(withFreq: 17000)      //Start playing sine wave with default frequency
+        audio!.startMicrophoneProcessing(withFps: 20)                   //
+        audio!.play()
+        
+        // run the loop for updating the graph and gesture peridocially
+        // 0.05 is about 20FPS update
+        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            self.updateGraphAndGesture()
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        //Stop and nil audio, timer and graph when navigating away from view
+        timer?.invalidate()
+        timer = nil
+        graph?.teardown()
+        graph = nil
+        audio?.stop()
+        audio = nil
+        
+        super.viewWillDisappear(animated)
     }
     
     // periodically, update the graph with refreshed FFT Data
-    func updateGraph(){
+    func updateGraphAndGesture(){
         // display the audio data
-        if let graph = self.graph {
-            /*
-            graph.updateGraph(
-                data: self.audio.fftData,
-                forKey: "fft"
-            )
+        if let graph = self.graph,
+           let audio = self.audio{
+            let freq = Int(audio.sineFrequency)
             
-            
-            // provide some fresh samples from model for graphing
-            graph.updateGraph(
-                data: self.audio.timeData, // graph the data
-                forKey: "time" // for this graph key (we only have one)
-            )
-            */
-            // we can start at about 150Hz and show the next 300 points
-            // actual Hz = f_0 * N/F_s
-            let freq = Int(self.audio.sineFrequency)
-            //let centerIndex:Int = freq * AudioConstants.AUDIO_BUFFER_SIZE/audio.samplingRate
+            //Get a subarray centered around the index in fft corresponding to sine frequency
             let centerIdx:Int = freq * AudioConstants.AUDIO_BUFFER_SIZE/audio.samplingRate
             let startIdx = centerIdx - 50
             let endIdx = centerIdx + 50
-            let subArray:[Float] = Array(self.audio.fftData[startIdx...endIdx])
-            //let subArray:[Float] = Array(self.audio.fftData[startIdx...startIdx+200])
+            let subArray:[Float] = Array(self.audio!.fftData[startIdx...endIdx])
+
+            //Update graph
             graph.updateGraph(
                 data: subArray,
                 forKey: "fftZoomed"
             )
-            //TODO: should this be here in the View controller? Or in Model?
-            //var mx:Float = 0
-            //vDSP_maxv(&self.audio.fftData[startIdx], 1, &mx, vDSP_Length(300))
+            
+            //Detect gestures and update display label
+            audio.detectGestures()
+            gestureLabel.text = audio.gesture
         }
-        gestureLabel.text = self.audio.gesture
-        
-        
     }
     
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    //MARK: Actions
+    @IBAction func changeFrequency(_ sender: UISlider) {
+        //Increment sinewave frequency in increments of step value
+        self.audio!.sineFrequency = roundf(sender.value / self.stepValue)*self.stepValue
+        
+        //Adjust number of neighboring bins considered to detect wave reflection based on sine frequency
+        self.audio!.updateBandwidth()
+        
+        //Update label displaying current frequency
+        freqLabel.text = String(format: "Frequency: %.0f Hz", self.audio!.sineFrequency)
     }
-    */
 
 }
